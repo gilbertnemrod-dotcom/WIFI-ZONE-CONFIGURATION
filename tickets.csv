@@ -1,0 +1,13 @@
+code,duree_jours,prix,statut
+DEMO-100-01,2,100,disponible
+DEMO-100-02,2,100,disponible
+DEMO-100-03,2,100,disponible
+DEMO-200-01,3,200,disponible
+DEMO-200-02,3,200,disponible
+DEMO-300-01,5,300,disponible
+DEMO-300-02,5,300,disponible
+DEMO-500-01,7,500,disponible
+DEMO-500-02,7,500,disponible
+DEMO-500-03,7,500,disponible
+DEMO-2000-01,30,2000,disponible
+DEMO-2000-02,30,2000,disponible
