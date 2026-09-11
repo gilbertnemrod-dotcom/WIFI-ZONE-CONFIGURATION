@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Simulation de paiement</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+    background: #0f1720;
+    color: #e8edf2;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
+    text-align: center;
+  }
+  .carte {
+    background: #1a2531;
+    border-radius: 16px;
+    padding: 32px 24px;
+    max-width: 380px;
+    width: 100%;
+  }
+  .badge-demo {
+    background: #ffb020;
+    color: #1a1400;
+    font-weight: 700;
+    font-size: 13px;
+    padding: 6px 14px;
+    border-radius: 20px;
+    display: inline-block;
+    margin-bottom: 18px;
+  }
+  h1 { font-size: 18px; margin-bottom: 8px; }
+  .explication {
+    color: #8a97a6;
+    font-size: 14px;
+    margin-bottom: 24px;
+    line-height: 1.5;
+  }
+  .boutons { display: flex; flex-direction: column; gap: 12px; }
+  button {
+    padding: 15px;
+    border: none;
+    border-radius: 10px;
+    font-weight: 700;
+    font-size: 15px;
+    cursor: pointer;
+  }
+  #btn-confirmer { background: #34c759; color: #06240f; }
+  #btn-echouer { background: #2c3b48; color: #ccd6e0; }
+  #resultat { margin-top: 20px; display: none; }
+  #resultat.ok { color: #34c759; }
+  #resultat.erreur { color: #ff5c5c; }
+  .ticket-box {
+    background: #0f1720;
+    border: 2px dashed #4da3ff;
+    border-radius: 10px;
+    padding: 16px;
+    margin-top: 16px;
+    font-family: monospace;
+    font-size: 18px;
+    letter-spacing: 1px;
+  }
+</style>
+</head>
+<body>
+
+<div class="carte">
+  <div class="badge-demo">⚠ SIMULATION</div>
+  <h1>Ceci remplace l'écran Flooz / T-Money</h1>
+  <div class="explication">
+    En vrai, le client saisirait son code PIN Mobile Money ici, et
+    PayGateGlobal confirmerait le paiement automatiquement.<br><br>
+    Pour la démo, appuie sur un des boutons pour simuler le résultat.
+  </div>
+
+  <div class="boutons" id="boutons">
+    <button id="btn-confirmer">✅ Simuler paiement réussi</button>
+    <button id="btn-echouer">❌ Simuler paiement échoué</button>
+  </div>
+
+  <div id="resultat"></div>
+</div>
+
+<script>
+const params = new URLSearchParams(window.location.search);
+const transactionId = params.get("transaction_id");
+
+async function envoyerWebhook(statut) {
+  document.getElementById("boutons").style.display = "none";
+  const resultatDiv = document.getElementById("resultat");
+  resultatDiv.style.display = "block";
+  resultatDiv.textContent = "Traitement...";
+
+  const reponse = await fetch("/webhook", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({transaction_id: transactionId, statut_paiement: statut})
+  });
+  const data = await reponse.json();
+
+  if (data.statut === "complete") {
+    resultatDiv.className = "ok";
+    resultatDiv.innerHTML = `
+      Paiement confirmé ✅<br>
+      Voici le ticket (normalement envoyé par SMS) :
+      <div class="ticket-box">${data.ticket.code}</div>
+      Valable ${data.ticket.duree_jours} jours
+    `;
+  } else if (data.statut === "echoue") {
+    resultatDiv.className = "erreur";
+    resultatDiv.textContent = "Paiement refusé. Aucun ticket n'a été distribué.";
+  } else if (data.statut === "stock_epuise") {
+    resultatDiv.className = "erreur";
+    resultatDiv.textContent = "Stock épuisé entre-temps. Le client devrait être remboursé.";
+  } else {
+    resultatDiv.className = "erreur";
+    resultatDiv.textContent = "Erreur : " + (data.erreur || "inconnue");
+  }
+}
+
+document.getElementById("btn-confirmer").addEventListener("click", () => envoyerWebhook("confirme"));
+document.getElementById("btn-echouer").addEventListener("click", () => envoyerWebhook("echoue"));
+</script>
+
+</body>
+</html>
